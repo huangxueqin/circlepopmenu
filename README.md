@@ -1,1 +1,1 @@
-![](screenshot/demo.gif)
+<img src="screenshot/demo.gif" width="50%" />
