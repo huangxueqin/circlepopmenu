@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="CircleButton">
+        <attr name="state_expanded" format="boolean" />
+        <attr name="state_pressed" format="boolean" />
+        <attr name="button_background" format="reference" />
+        <attr name="button_icon" format="reference" />
+        <attr name="button_icon_type" format="string" />
+    </declare-styleable>
+
+    <declare-styleable name="CirclePopMenu">
+        <attr name="main_button_size" format="dimension" />
+        <attr name="menu_button_size" format="dimension" />
+        <attr name="menu_label_text_size" format="dimension" />
+        <attr name="menu_button_spacing" format="dimension" />
+        <attr name="menu_label_background" format="reference" />
+        <attr name="main_button_background" format="reference" />
+        <attr name="menu_button_background" format="reference" />
+    </declare-styleable>
+
+    <declare-styleable name="CirclePopMenuItem">
+        <attr name="menu_icon" format="reference" />
+        <attr name="menu_icon_background" format="reference" />
+        <attr name="menu_text" format="reference" />
+        <attr name="menu_text_background" format="reference" />
+    </declare-styleable>
+
+</resources>
