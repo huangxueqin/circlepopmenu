@@ -21,28 +21,25 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Created by huangxueqin on 16/9/10.
  */
 public class CircleButton extends View {
-
-
-    private static final int[] STATE_PRESSED =    { R.attr.state_pressed };
-    private static final int[] STATE_UNPRESSED =  { -R.attr.state_pressed };
+    private static final int[] STATE_PRESSED =    { android.R.attr.state_pressed };
+    private static final int[] STATE_UNPRESSED =  {-android.R.attr.state_pressed };
 
     private int mRadius = -1;
     private IconType mIconType;
 
     private Drawable mIconDrawable;
-    private StateListDrawable mRoundBGDrawable;
-    private HashMap<Drawable, Bitmap> mRoundBGBitmaps = new HashMap<>();
-    private BitmapShader mRoundBGShader;
-    private Paint mRoundBGPaint = new Paint();
-    private Paint mShadowPaint = new Paint();
-    private Paint mIconPaint = new Paint();
+    private Drawable mCircleDrawable;
+    private BitmapShader mCircleShader;
+    private BitmapShader mPressedCircleShader;
+    private Paint mCirclePaint;
+    private Paint mShadowPaint;
+    private Paint mIconPaint;
 
     private RectF mTempRect = new RectF();
     private Path mTempPath = new Path();
@@ -58,92 +55,48 @@ public class CircleButton extends View {
 
     public CircleButton(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        setClickable(true);
-        clearViewBackground();
-        TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.CircleButton);
-        Drawable d = ta.getDrawable(R.styleable.CircleButton_button_background);
-        Drawable icon = ta.getDrawable(R.styleable.CircleButton_button_icon);
-        String typeStr = ta.getNonResourceString(R.styleable.CircleButton_button_icon_type);
-        ta.recycle();
-        mIconType = typeStr != null && typeStr.equals(TYPE_IMAGE_STR) ? ICON_TYPE.IMAGE : ICON_TYPE.PLUS;
-        mIconDrawable = icon;
-        setButtonBackgroundDrawable(d, true);
+        initAttributes(context, attrs);
         initPaints();
+
+        setBackgroundColor(Color.TRANSPARENT);
+        setClickable(true);
     }
 
     private void initAttributes(Context context, AttributeSet attrs) {
         TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.CircleButton);
-
+        mCircleDrawable = ta.getDrawable(R.styleable.CircleButton_background);
+        mIconDrawable = ta.getDrawable(R.styleable.CircleButton_icon);
+        mIconType = IconType.fromId(ta.getInt(R.styleable.CircleButton_iconType, mIconDrawable == null ? -1 : 1));
+        ta.recycle();
+        if (mCircleDrawable == null) {
+            mCircleDrawable = getDefaultCircleDrawable(context);
+        }
     }
 
-    private void clearViewBackground() {
-        // set origin background null
-        if(Build.VERSION.SDK_INT > 15) {
-            setBackground(new ColorDrawable(Color.TRANSPARENT));
-        }
-        else {
-            setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+    private Drawable getDefaultCircleDrawable(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+            return getResources().getDrawable(R.drawable.default_circle_button_bg);
+        } else {
+            return getResources().getDrawable(R.drawable.default_circle_button_bg, context.getTheme());
         }
     }
 
     private void initPaints() {
-        mRoundBGPaint.setStyle(Paint.Style.FILL);
-        mRoundBGPaint.setAntiAlias(true);
+        mCirclePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mCirclePaint.setStyle(Paint.Style.FILL);
 
-        mShadowPaint.setColor(Color.GRAY);
+        if (mCircleDrawable instanceof StateListDrawable) {
+            StateListDrawable stateListDrawable = (StateListDrawable) mCircleDrawable;
+
+        }
+
+        mShadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mShadowPaint.setColor(Color.BLACK);
+        mShadowPaint.setAlpha(255/2);
         mShadowPaint.setMaskFilter(new BlurMaskFilter(5, BlurMaskFilter.Blur.NORMAL));
         setLayerType(LAYER_TYPE_SOFTWARE, mShadowPaint);
 
-        mIconPaint.setAntiAlias(true);
-    }
-
-    public void setButtonBackgroundDrawable(Drawable d) {
-        setButtonBackgroundDrawable(d, false);
-    }
-
-    private void setButtonBackgroundDrawable(Drawable d, boolean forceSet) {
-        if(forceSet || d != mRoundBGDrawable) {
-            if (d != null && d instanceof StateListDrawable) {
-                mRoundBGDrawable = (StateListDrawable) d;
-            } else if (d == null) {
-                Drawable normal = new ColorDrawable(DEFAULT_MAIN_BUTTON_COLOR);
-                Drawable pressed = new ColorDrawable(DEFAULT_MAIN_BUTTON_DARK_COLOR);
-                mRoundBGDrawable = new StateListDrawable();
-                mRoundBGDrawable.addState(STATE_PRESSED, pressed);
-                mRoundBGDrawable.addState(STATE_EMPTY, normal);
-            } else {
-                mRoundBGDrawable = new StateListDrawable();
-                mRoundBGDrawable.addState(new int[]{}, d);
-            }
-            clearCachedBGImages();
-            refreshRoundBGDrawableState();
-        }
-    }
-
-    public static Drawable getDefaultBGDrawable() {
-        Drawable normal = new ColorDrawable(DEFAULT_MAIN_BUTTON_COLOR);
-        Drawable pressed = new ColorDrawable(DEFAULT_MAIN_BUTTON_DARK_COLOR);
-        StateListDrawable d = new StateListDrawable();
-        d.addState(STATE_PRESSED, pressed);
-        d.addState(STATE_EMPTY, normal);
-        return d;
-    }
-
-    public void setButtonIconDrawable(Drawable d) {
-        if(mIconDrawable != d) {
-            mIconDrawable = d;
-            invalidate();
-        }
-    }
-
-    public void setIconType(ICON_TYPE t) {
-        if(mIconType != t) {
-            mIconType = t;
-            if(mIconType == ICON_TYPE.IMAGE && mIconDrawable == null) {
-                mIconDrawable = new ColorDrawable(DEFAULT_MAIN_BUTTON_COLOR);
-            }
-            invalidate();
-        }
+        mIconPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     }
 
     private void clearCachedBGImages() {
@@ -161,13 +114,43 @@ public class CircleButton extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int w = MeasureSpec.getSize(widthMeasureSpec);
-        int h = MeasureSpec.getSize(heightMeasureSpec);
-        mCx = w/2;
-        mCy = h/2;
-        int size = Math.min(w, h);
-        mRadius = size / 2 - 5;
-        setMeasuredDimension(size, size);
+        final int widthMode = MeasureSpec.getMode(widthMeasureSpec);
+        final int widthSize = MeasureSpec.getSize(widthMeasureSpec);
+        final int heightMode = MeasureSpec.getMode(heightMeasureSpec);
+        final int heightSize = MeasureSpec.getSize(heightMeasureSpec);
+
+        int width = Math.max(0, widthSize);
+        int height = Math.max(0, heightSize);
+
+        if (widthMode == MeasureSpec.EXACTLY) {
+            if (heightMode == MeasureSpec.AT_MOST) {
+                height = Math.min(width, height);
+            } else if (heightMode == MeasureSpec.UNSPECIFIED) {
+                height = width;
+            }
+        } else if (width == MeasureSpec.EXACTLY) {
+            if (widthMode == MeasureSpec.AT_MOST) {
+                width = Math.min(width, height);
+            } else {
+                width = height;
+            }
+        } else if (widthMode == MeasureSpec.AT_MOST && height == MeasureSpec.AT_MOST) {
+            width = Math.min(width, height);
+            height = Math.min(width, height);
+        } else if (widthMode == MeasureSpec.UNSPECIFIED && heightMode == MeasureSpec.UNSPECIFIED) {
+            width = Math.max(width, height);
+            height = Math.max(width, height);
+        } else {
+            if (widthMode == MeasureSpec.UNSPECIFIED) {
+                width = height;
+            } else {
+                height = width;
+            }
+        }
+
+        setMeasuredDimension(width, height);
+        final int padding = getPaddingLeft() + getPaddingRight();
+        mRadius = Math.min(width-padding, height-padding) / 2;
     }
 
     @Override
@@ -187,9 +170,9 @@ public class CircleButton extends View {
     }
 
     private void refreshRoundBGDrawableState() {
-        if(mRoundBGDrawable != null && mRoundBGDrawable.isStateful()) {
-            mRoundBGDrawable.setState(onCreateRoundBGDrawableState());
-            mRoundBGShader = new BitmapShader(getCurrRoundBGBitmap(), Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+        if(mCircleDrawable != null && mCircleDrawable.isStateful()) {
+            mCircleDrawable.setState(onCreateRoundBGDrawableState());
+            mCircleShader = new BitmapShader(getCurrRoundBGBitmap(), Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
             invalidate();
         }
     }
@@ -207,10 +190,13 @@ public class CircleButton extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         // draw shadow
-        canvas.drawCircle(mCx, mCy, mRadius, mShadowPaint);
+        final int cx = getWidth() / 2;
+        final int cy = getHeight() / 2;
+        canvas.drawCircle(cx, cy, mRadius, mShadowPaint);
+
         // draw round background
-        mRoundBGPaint.setShader(mRoundBGShader);
-        canvas.drawCircle(mCx, mCy, mRadius, mRoundBGPaint);
+        mCirclePaint.setShader(mCircleShader);
+        canvas.drawCircle(mCx, mCy, mRadius, mCirclePaint);
 
         if(mIconType == ICON_TYPE.PLUS) {
             // draw plus
@@ -241,7 +227,7 @@ public class CircleButton extends View {
     }
 
     private Bitmap getCurrRoundBGBitmap() {
-        Drawable key = mRoundBGDrawable.getCurrent();
+        Drawable key = mCircleDrawable.getCurrent();
         Bitmap b = mRoundBGBitmaps.get(key);
         if(b != null) {
             return b;
@@ -290,14 +276,14 @@ public class CircleButton extends View {
     }
 
     public enum IconType {
-        PLUS(0), IMAGE(1), CUSTOM(3);
+        NONE(-1), PLUS(0), IMAGE(1), CUSTOM(3);
 
         int id;
         IconType(int id) {
             this.id = id;
         }
 
-        public IconType fromId(int id) {
+        public static IconType fromId(int id) {
             for (IconType it : values()) {
                 if (it.id == id) {
                     return it;

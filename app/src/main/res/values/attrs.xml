@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="CircleButton">
-        <attr name="background" format="reference|color" />
+        <attr name="background" format="reference" />
         <attr name="iconType" format="enum">
             <enum name="plus" value="0" />
             <enum name="image" value="1" />
