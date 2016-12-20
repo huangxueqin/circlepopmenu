@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="CircleButton">
-        <attr name="state_expanded" format="boolean" />
-        <attr name="state_pressed" format="boolean" />
-        <attr name="button_background" format="reference" />
-        <attr name="button_icon" format="reference" />
-        <attr name="button_icon_type" format="string" />
+        <attr name="background" format="reference|color" />
+        <attr name="iconType" format="enum">
+            <enum name="plus" value="0" />
+            <enum name="image" value="1" />
+            <enum name="custom" value="2" />
+        </attr>
+        <attr name="icon" format="reference" />
     </declare-styleable>
 
     <declare-styleable name="CirclePopMenu">

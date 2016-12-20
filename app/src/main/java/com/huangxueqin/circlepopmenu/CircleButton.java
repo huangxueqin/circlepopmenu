@@ -19,7 +19,6 @@ import android.graphics.drawable.StateListDrawable;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 
 import java.util.HashMap;
@@ -29,36 +28,24 @@ import java.util.Map;
  * Created by huangxueqin on 16/9/10.
  */
 public class CircleButton extends View {
-    public static final int DEFAULT_MAIN_BUTTON_COLOR = 0xff03A9F4;
-    public static final int DEFAULT_MAIN_BUTTON_DARK_COLOR = 0xff0389C4;
-    private static final int[] STATE_PRESSED =    { R.attr.state_pressed };
-    private static final int[] STATE_UNPRESSED =  { - R.attr.state_pressed };
-    private static final int[] STATE_EMPTY = {};
 
-    public static enum ICON_TYPE {TYPE_PLUS, TYPE_IMAGE}
-    public static String TYPE_PLUS_STR = "plus";
-    public static String TYPE_IMAGE_STR = "image";
+
+    private static final int[] STATE_PRESSED =    { R.attr.state_pressed };
+    private static final int[] STATE_UNPRESSED =  { -R.attr.state_pressed };
 
     private int mRadius = -1;
-    private int mCx = -1;
-    private int mCy = -1;
-
-    private ICON_TYPE mIconType;
-
-    private HashMap<Drawable, Bitmap> mRoundBGBitmaps = new HashMap<>();
-    private StateListDrawable mRoundBGDrawable;
+    private IconType mIconType;
 
     private Drawable mIconDrawable;
-
+    private StateListDrawable mRoundBGDrawable;
+    private HashMap<Drawable, Bitmap> mRoundBGBitmaps = new HashMap<>();
+    private BitmapShader mRoundBGShader;
     private Paint mRoundBGPaint = new Paint();
     private Paint mShadowPaint = new Paint();
     private Paint mIconPaint = new Paint();
 
-    private BitmapShader mRoundBGShader;
-
     private RectF mTempRect = new RectF();
     private Path mTempPath = new Path();
-    private Matrix mTempMatrix = new Matrix();
 
 
     public CircleButton(Context context) {
@@ -78,10 +65,15 @@ public class CircleButton extends View {
         Drawable icon = ta.getDrawable(R.styleable.CircleButton_button_icon);
         String typeStr = ta.getNonResourceString(R.styleable.CircleButton_button_icon_type);
         ta.recycle();
-        mIconType = typeStr != null && typeStr.equals(TYPE_IMAGE_STR) ? ICON_TYPE.TYPE_IMAGE : ICON_TYPE.TYPE_PLUS;
+        mIconType = typeStr != null && typeStr.equals(TYPE_IMAGE_STR) ? ICON_TYPE.IMAGE : ICON_TYPE.PLUS;
         mIconDrawable = icon;
         setButtonBackgroundDrawable(d, true);
         initPaints();
+    }
+
+    private void initAttributes(Context context, AttributeSet attrs) {
+        TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.CircleButton);
+
     }
 
     private void clearViewBackground() {
@@ -147,7 +139,7 @@ public class CircleButton extends View {
     public void setIconType(ICON_TYPE t) {
         if(mIconType != t) {
             mIconType = t;
-            if(mIconType == ICON_TYPE.TYPE_IMAGE && mIconDrawable == null) {
+            if(mIconType == ICON_TYPE.IMAGE && mIconDrawable == null) {
                 mIconDrawable = new ColorDrawable(DEFAULT_MAIN_BUTTON_COLOR);
             }
             invalidate();
@@ -220,7 +212,7 @@ public class CircleButton extends View {
         mRoundBGPaint.setShader(mRoundBGShader);
         canvas.drawCircle(mCx, mCy, mRadius, mRoundBGPaint);
 
-        if(mIconType == ICON_TYPE.TYPE_PLUS) {
+        if(mIconType == ICON_TYPE.PLUS) {
             // draw plus
             mIconPaint.setColor(Color.WHITE);
             mIconPaint.setStyle(Paint.Style.FILL);
@@ -231,7 +223,7 @@ public class CircleButton extends View {
             mTempRect.set(mCx - m, mCy - t, mCx + m, mCy + t);
             canvas.drawRoundRect(mTempRect, m, m, mIconPaint);
         }
-        else if(mIconType == ICON_TYPE.TYPE_IMAGE && mIconDrawable != null) {
+        else if(mIconType == ICON_TYPE.IMAGE && mIconDrawable != null) {
             canvas.save();
             int dh = mIconDrawable.getIntrinsicHeight();
             int dw = mIconDrawable.getIntrinsicWidth();
@@ -295,6 +287,24 @@ public class CircleButton extends View {
             }
         }
         return null;
+    }
+
+    public enum IconType {
+        PLUS(0), IMAGE(1), CUSTOM(3);
+
+        int id;
+        IconType(int id) {
+            this.id = id;
+        }
+
+        public IconType fromId(int id) {
+            for (IconType it : values()) {
+                if (it.id == id) {
+                    return it;
+                }
+            }
+            throw new IllegalArgumentException("" + id + " is an invalid IconType");
+        }
     }
 
     private static void D(String msg) {

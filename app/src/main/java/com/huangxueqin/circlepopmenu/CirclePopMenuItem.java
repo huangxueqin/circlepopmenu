@@ -1,18 +1,14 @@
 package com.huangxueqin.circlepopmenu;
 
 import android.content.Context;
-import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.RectF;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.StateListDrawable;
-import android.graphics.drawable.shapes.RectShape;
 import android.graphics.drawable.shapes.RoundRectShape;
 import android.os.Build;
 import android.text.TextUtils;
-import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -53,7 +49,7 @@ public class CirclePopMenuItem extends ViewGroup {
             addView(mLabel);
         }
         mIcon = new CircleButton(context);
-        mIcon.setIconType(CircleButton.ICON_TYPE.TYPE_IMAGE);
+        mIcon.setIconType(CircleButton.ICON_TYPE.IMAGE);
         mIcon.setButtonIconDrawable(icon);
         addView(mIcon);
 
