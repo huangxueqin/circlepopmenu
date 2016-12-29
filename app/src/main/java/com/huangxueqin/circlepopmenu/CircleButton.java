@@ -1,6 +1,7 @@
 package com.huangxueqin.circlepopmenu;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
@@ -15,7 +16,7 @@ import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.StateListDrawable;
+import android.graphics.drawable.ShapeDrawable;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -27,22 +28,20 @@ import java.util.Map;
  * Created by huangxueqin on 16/9/10.
  */
 public class CircleButton extends View {
-    private static final int[] STATE_PRESSED =    { android.R.attr.state_pressed };
-    private static final int[] STATE_UNPRESSED =  {-android.R.attr.state_pressed };
+    private static final int SHADOW_WIDTH_PX = 5;
 
     private int mRadius = -1;
     private IconType mIconType;
 
     private Drawable mIconDrawable;
     private Drawable mCircleDrawable;
-    private BitmapShader mCircleShader;
-    private BitmapShader mPressedCircleShader;
     private Paint mCirclePaint;
     private Paint mShadowPaint;
     private Paint mIconPaint;
 
+    private Path mCircleBackgroundPath = new Path();
+
     private RectF mTempRect = new RectF();
-    private Path mTempPath = new Path();
 
 
     public CircleButton(Context context) {
@@ -85,31 +84,47 @@ public class CircleButton extends View {
         mCirclePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mCirclePaint.setStyle(Paint.Style.FILL);
 
-        if (mCircleDrawable instanceof StateListDrawable) {
-            StateListDrawable stateListDrawable = (StateListDrawable) mCircleDrawable;
-
-        }
-
         mShadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mShadowPaint.setColor(Color.BLACK);
         mShadowPaint.setAlpha(255/2);
-        mShadowPaint.setMaskFilter(new BlurMaskFilter(5, BlurMaskFilter.Blur.NORMAL));
+        mShadowPaint.setMaskFilter(new BlurMaskFilter(SHADOW_WIDTH_PX, BlurMaskFilter.Blur.NORMAL));
         setLayerType(LAYER_TYPE_SOFTWARE, mShadowPaint);
 
         mIconPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     }
 
-    private void clearCachedBGImages() {
-        for(Map.Entry<Drawable, Bitmap> entry : mRoundBGBitmaps.entrySet()) {
-            entry.getValue().recycle();
+    public void setIconDrawable(Drawable iconDrawable) {
+        if (iconDrawable == null) {
+            mIconType = IconType.NONE;
+            invalidate();
+            return;
         }
-        mRoundBGBitmaps.clear();
+
+        mIconType = IconType.IMAGE;
+        if (iconDrawable.equals(mIconDrawable)) {
+            mIconDrawable = iconDrawable;
+            invalidate();
+        }
     }
 
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        clearCachedBGImages();
+    public void setIconResource(int resId) {
+        Resources res = getResources();
+        Drawable d = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            d = res.getDrawable(resId, getContext().getTheme());
+        } else {
+            d = res.getDrawable(resId);
+        }
+        if (d != null) {
+            setIconDrawable(d);
+        }
+    }
+
+    public void setIconType(IconType type) {
+        if (mIconType != type) {
+            mIconType = type;
+            invalidate();
+        }
     }
 
     @Override
@@ -149,41 +164,39 @@ public class CircleButton extends View {
         }
 
         setMeasuredDimension(width, height);
-        final int padding = getPaddingLeft() + getPaddingRight();
+        final int padding = Math.max(SHADOW_WIDTH_PX*2, getPaddingLeft() + getPaddingRight());
         mRadius = Math.min(width-padding, height-padding) / 2;
     }
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        mTempRect.set(mCx-mRadius, mCy-mRadius, mCx+mRadius, mCy+mRadius);
-        mTempPath.addOval(mTempRect, Path.Direction.CW);
+        mCircleBackgroundPath.reset();
+        mCircleBackgroundPath.addCircle(w/2, h/2, mRadius, Path.Direction.CW);
     }
 
-    private int[] onCreateRoundBGDrawableState() {
-        if(isPressed()) {
-            return STATE_PRESSED;
+    private void refreshCircleDrawableState() {
+        final int[] state = getDrawableState();
+        boolean changed = false;
+        Drawable d = mCircleDrawable;
+        if (d != null && d.isStateful()) {
+            changed |= d.setState(state);
         }
-        else {
-            return STATE_EMPTY;
-        }
-    }
 
-    private void refreshRoundBGDrawableState() {
-        if(mCircleDrawable != null && mCircleDrawable.isStateful()) {
-            mCircleDrawable.setState(onCreateRoundBGDrawableState());
-            mCircleShader = new BitmapShader(getCurrRoundBGBitmap(), Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+        if (changed) {
             invalidate();
         }
     }
 
 
+
     @Override
     public void setPressed(boolean pressed) {
-        boolean needUpdate = pressed != isPressed();
+        boolean pressChange = pressed != isPressed();
         super.setPressed(pressed);
-        if(needUpdate) {
-            refreshRoundBGDrawableState();
+
+        if(pressChange) {
+            refreshCircleDrawableState();
         }
     }
 
@@ -194,22 +207,25 @@ public class CircleButton extends View {
         final int cy = getHeight() / 2;
         canvas.drawCircle(cx, cy, mRadius, mShadowPaint);
 
-        // draw round background
-        mCirclePaint.setShader(mCircleShader);
-        canvas.drawCircle(mCx, mCy, mRadius, mCirclePaint);
+        canvas.save();
+        // draw circle background
+        canvas.clipPath(mCircleBackgroundPath);
+        Drawable d = mCircleDrawable.getCurrent();
+        d.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
+        d.draw(canvas);
 
-        if(mIconType == ICON_TYPE.PLUS) {
+        if(mIconType == IconType.PLUS) {
             // draw plus
             mIconPaint.setColor(Color.WHITE);
             mIconPaint.setStyle(Paint.Style.FILL);
             int t = (int) (1.0 / 2 * mRadius + 0.5);
             int m = (int) (getContext().getResources().getDisplayMetrics().density * 1);
-            mTempRect.set(mCx - t, mCy - m, mCx + t, mCy + m);
+            mTempRect.set(cx - t, cy - m, cx + t, cy + m);
             canvas.drawRoundRect(mTempRect, m, m, mIconPaint);
-            mTempRect.set(mCx - m, mCy - t, mCx + m, mCy + t);
+            mTempRect.set(cx - m, cy - t, cx + m, cy + t);
             canvas.drawRoundRect(mTempRect, m, m, mIconPaint);
         }
-        else if(mIconType == ICON_TYPE.IMAGE && mIconDrawable != null) {
+        else if(mIconType == IconType.IMAGE && mIconDrawable != null) {
             canvas.save();
             int dh = mIconDrawable.getIntrinsicHeight();
             int dw = mIconDrawable.getIntrinsicWidth();
@@ -219,60 +235,15 @@ public class CircleButton extends View {
             canvas.translate(translateX, translateY);
             if(dh > 1.0*mRadius || dw > 1.0*mRadius) {
                 float scale = Math.min(1.0f*mRadius/dh, 1.0f*mRadius/dw);
-                canvas.scale(scale, scale, mCx-translateX, mCy-translateY);
+                canvas.scale(scale, scale, cx-translateX, cy-translateY);
             }
             mIconDrawable.draw(canvas);
             canvas.restore();
-        }
-    }
+        } else if (mIconType == IconType.CUSTOM) {
 
-    private Bitmap getCurrRoundBGBitmap() {
-        Drawable key = mCircleDrawable.getCurrent();
-        Bitmap b = mRoundBGBitmaps.get(key);
-        if(b != null) {
-            return b;
-        }
-        b = createBitmapFromDrawable(key);
-        int bw = b.getWidth();
-        int bh = b.getHeight();
-        float targetSize = 2*mRadius;
-        float scale = Math.min(1f, Math.min(targetSize/bw, targetSize/bh));
-        if(scale < 1f) {
-            Matrix sm = new Matrix();
-            sm.postScale(scale, scale);
-            Bitmap newB = Bitmap.createBitmap(b, 0, 0, bw, bh, sm, true);
-            b.recycle();
-            b = newB;
-        }
-        mRoundBGBitmaps.put(key, b);
-        return b;
-    }
-
-    private Bitmap createBitmapFromDrawable(Drawable sld) {
-        Drawable d = sld.getCurrent();
-        if (d instanceof BitmapDrawable) {
-            return ((BitmapDrawable) d).getBitmap();
         }
 
-        Bitmap bitmap = null;
-        try {
-            if(d instanceof ColorDrawable) {
-                bitmap = Bitmap.createBitmap(2, 2, Bitmap.Config.ARGB_4444);
-            }
-            else {
-                bitmap = Bitmap.createBitmap(d.getIntrinsicWidth(), d.getIntrinsicHeight(), Bitmap.Config.ARGB_4444);
-            }
-            Canvas canvas = new Canvas(bitmap);
-            d.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-            d.draw(canvas);
-            return bitmap;
-        } catch (Exception e) {
-            if(bitmap != null) {
-                bitmap.recycle();
-                bitmap = null;
-            }
-        }
-        return null;
+        canvas.restore();
     }
 
     public enum IconType {

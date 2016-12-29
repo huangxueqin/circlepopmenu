@@ -49,8 +49,7 @@ public class CirclePopMenuItem extends ViewGroup {
             addView(mLabel);
         }
         mIcon = new CircleButton(context);
-        mIcon.setIconType(CircleButton.ICON_TYPE.IMAGE);
-        mIcon.setButtonIconDrawable(icon);
+        mIcon.setIconResource(R.drawable.copy);
         addView(mIcon);
 
         setClickable(true);

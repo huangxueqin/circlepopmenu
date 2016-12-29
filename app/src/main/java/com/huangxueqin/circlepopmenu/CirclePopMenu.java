@@ -59,7 +59,6 @@ public class CirclePopMenu extends ViewGroup {
         int defaultMenuButtonSize = (int) (getResources().getDisplayMetrics().density * DEFAULT_MENU_BUTTON_SIZE + 0.5);
         int defaultMenuButtonDist = (int) (getResources().getDisplayMetrics().density * DEFAULT_MENU_BUTTON_DIST + 0.5);
         int defaultMenuLabelSize = (int) (getResources().getDisplayMetrics().scaledDensity * DEFAULT_MENU_LABEL_TEXT_SIZE + 0.5);
-        Drawable defaultBG = CircleButton.getDefaultBGDrawable();
 
         TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.CirclePopMenu, defStyleAttr, 0);
         mMainButtonSize = ta.getDimensionPixelSize(R.styleable.CirclePopMenu_main_button_size, defaultMainButtonSize);
@@ -71,9 +70,6 @@ public class CirclePopMenu extends ViewGroup {
 
         // setup main button
         mMainButton = new CircleButton(getContext());
-        if(mMainButtonBG != null) {
-            mMainButton.setButtonBackgroundDrawable(mMainButtonBG);
-        }
         addView(mMainButton);
         mMainButton.setOnClickListener(mMainButtonOnClickListener);
 
